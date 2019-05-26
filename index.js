@@ -5,23 +5,24 @@
 // spellchecker:ignore keypath epub mobi simpleauth subproduct subproducts gamekey humblebundle
 
 const async = require('async')
-const commander = require('commander')
-const packageInfo = require('./package.json')
-const Nightmare = require('nightmare')
-const request = require('request')
-const Breeze = require('breeze')
-const Bottleneck = require('bottleneck')
 const colors = require('colors')
+const commander = require('commander')
 const crypto = require('crypto')
+const fs = require('fs')
 const inquirer = require('inquirer')
 const keypath = require('nasa-keypath')
 const mkdirp = require('mkdirp')
+const os = require('os')
+const packageInfo = require('./package.json')
+const path = require('path')
+const request = require('request')
 const sanitizeFilename = require('sanitize-filename')
 const url = require('url')
 const util = require('util')
-const path = require('path')
-const fs = require('fs')
-const os = require('os')
+const Bottleneck = require('bottleneck')
+const Breeze = require('breeze')
+const Nightmare = require('nightmare')
+
 const userAgent = util.format(packageInfo.name + '/%s', packageInfo.version)
 
 const SUPPORTED_FORMATS = ['epub', 'mobi', 'pdf', 'pdf_hd', 'cbz']
