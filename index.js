@@ -15,6 +15,7 @@ const mkdirp = require('mkdirp')
 const os = require('os')
 const packageInfo = require('./package.json')
 const path = require('path')
+const paths = require('xdg-app-paths')(packageInfo.name)
 const progress = require('cli-progress')
 const request = require('request')
 const sanitizeFilename = require('sanitize-filename')
@@ -44,7 +45,23 @@ if (ALLOWED_FORMATS.indexOf(commander.format) === -1) {
   commander.help()
 }
 
-const configPath = path.resolve(os.homedir(), '.' + packageInfo.name + '.json')
+const configDirs = paths.configDirs()
+const configName = packageInfo.name + '.json'
+let configPathFound = false
+configDirs.forEach(item => {
+  let _path = path.join(item, configName)
+  if (!configPathFound && fs.existsSync(_path)) {
+    configPathFound = _path
+  }
+})
+const configPath = configPathFound || path.join(configDirs[0], configName)
+debug('configPath="%s"', configPath)
+mkdirp.sync(path.dirname(configPath), 0o700)
+
+const cacheDir = path.join(paths(packageInfo.name).cache())
+debug('cacheDir="%s"', cacheDir)
+mkdirp.sync(cacheDir, 0o700)
+
 const flow = Breeze()
 const limiter = new Bottleneck({ // Limit concurrent downloads
   maxConcurrent: commander.downloadLimit
