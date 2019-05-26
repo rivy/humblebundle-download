@@ -1,19 +1,24 @@
 {
-  "name": "humblebundle-ebook-downloader",
+  "name": "humblebundle-download",
   "version": "2.0.0",
   "license": "Unlicense",
   "main": "index.js",
   "bin": {
-    "humblebundle-ebook-downloader": "index.js"
+    "humblebundle-download": "index.js"
   },
   "scripts": {
     "test": "standard"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/DMarby/humblebundle-ebook-downloader.git"
+    "url": "https://github.com/rivy/humblebundle-download.git"
   },
   "author": "David Marby <david@dmarby.se> http://dmarby.se",
+  "contributors": [
+    "Roy Ivy III <rivy.dev@gmail.com> (http://github.com/rivy)",
+    "J. Longman (https://github.com/jlongman)",
+    "Johannes Löthberg (https://github.com/kyrias)"
+  ],
   "dependencies": {
     "async": "^2.6.2",
     "bottleneck": "^2.17.1",

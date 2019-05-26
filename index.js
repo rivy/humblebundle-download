@@ -18,7 +18,7 @@ const util = require('util')
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
-const userAgent = util.format('Humblebundle-Ebook-Downloader/%s', packageInfo.version)
+const userAgent = util.format(packageInfo.name + '/%s', packageInfo.version)
 
 const SUPPORTED_FORMATS = ['epub', 'mobi', 'pdf', 'pdf_hd', 'cbz']
 const ALLOWED_FORMATS = SUPPORTED_FORMATS.concat(['all']).sort()
@@ -38,7 +38,7 @@ if (ALLOWED_FORMATS.indexOf(commander.format) === -1) {
   commander.help()
 }
 
-const configPath = path.resolve(os.homedir(), '.humblebundle_ebook_downloader.json')
+const configPath = path.resolve(os.homedir(), '.' + packageInfo.name + '.json')
 const flow = Breeze()
 const limiter = new Bottleneck({ // Limit concurrent downloads
   maxConcurrent: commander.downloadLimit
