@@ -33,10 +33,10 @@ commander
   .version(packageInfo.version)
   .option('-d, --download-folder <downloader_folder>', 'Download folder', 'download')
   .option('-l, --download-limit <download_limit>', 'Parallel download limit', 1)
-  .option('-f, --format <format>', util.format('What format to download the ebook in (%s)', ALLOWED_FORMATS.join(', ')), 'epub')
-  .option('--auth-token <auth-token>', 'Optional: If you want to run headless, you can specify your authentication cookie from your browser (_simpleauth_sess)')
-  .option('-a, --all', 'Download all bundles')
-  .option('--debug', 'Enable debug logging', false)
+  .option('-f, --format <format>', util.format('Format to download (%s)', ALLOWED_FORMATS.join(', ')), 'epub')
+  .option('--auth-token <auth-token>', '(optional) for use in headless mode, specify your authentication cookie from your browser (_simpleauth_sess)')
+  .option('-a, --all', 'Download all bundles (default: false)', false)
+  .option('--debug', 'Enable debug logging (default: false)', false)
   .parse(process.argv)
 
 if (ALLOWED_FORMATS.indexOf(commander.format) === -1) {
