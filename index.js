@@ -2,7 +2,7 @@
 /* eslint-env es6, node */
 // ## editors ## (emacs/sublime) -*- coding: utf8-nix; tab-width: 2; mode: javascript; indent-tabs-mode: nil; basic-offset: 2; -*- ## (jEdit) :tabSize=4:indentSize=4:mode=javascript: ## (notepad++) vim:tabstop=2:syntax=javascript:expandtab:smarttab:softtabstop=2 ## modeline (see <https://archive.is/djTUD>@@<http://webcitation.org/66W3EhCAP> )
 // spellchecker:ignore expandtab smarttab softtabstop modeline
-// spellchecker:ignore keypath epub mobi simpleauth subproduct subproducts gamekey humblebundle barsize
+// spellchecker:ignore keypath epub flac mobi simpleauth subproduct subproducts gamekey humblebundle barsize
 
 const async = require('async')
 const colors = require('colors')
@@ -27,8 +27,15 @@ const Nightmare = require('nightmare')
 
 const userAgent = util.format(packageInfo.name + '/%s', packageInfo.version)
 
-const SUPPORTED_FORMATS = ['epub', 'mobi', 'pdf', 'pdf_hd', 'cbz']
+const SUPPORTED_PLATFORMS = ['audio', 'ebook', 'video']
+const SUPPORTED_AUDIO_FORMATS = ['flac', 'mp3']
+const SUPPORTED_EBOOK_FORMATS = ['epub', 'mobi', 'pdf', 'pdf_hd']
+const SUPPORTED_COMIC_FORMATS = ['cbz']
+// const SUPPORTED_VIDEO_FORMATS = ['download']
+const SUPPORTED_GENERAL_FORMATS = ['zip']
+const SUPPORTED_FORMATS = SUPPORTED_AUDIO_FORMATS.concat(SUPPORTED_EBOOK_FORMATS).concat(SUPPORTED_COMIC_FORMATS).concat(SUPPORTED_GENERAL_FORMATS)
 const ALLOWED_FORMATS = SUPPORTED_FORMATS.concat(['all']).sort()
+const ALLOWED_TYPES = SUPPORTED_PLATFORMS.concat(['all']).sort()
 
 const ALLOWED_SORT_PROPERTIES = ['date', 'name'].sort()
 
@@ -36,7 +43,8 @@ commander
   .version(packageInfo.version)
   .option('-d, --download-folder <download_folder>', 'Download folder', path.join(os.homedir(), 'Downloads', 'Humble Bundles'))
   .option('-l, --download-limit <download_limit>', 'Parallel download limit', 1)
-  .option('-f, --format <format>', util.format('Format to download (%s)', ALLOWED_FORMATS.join(', ')), 'epub')
+  .option('-f, --format <format>', util.format('Format to download (%s)', ALLOWED_FORMATS.join(', ')), 'ebook')
+  .option('-t, --type <type>', util.format('Type to download (%s)', ALLOWED_TYPES.join(', ')), 'ebook')
   .option('-s, --sort-by <property>', util.format('Sort bundles by property (%s)', ALLOWED_SORT_PROPERTIES.join(', ')), 'date')
   .option('--auth-token <auth-token>', '(optional) for use in headless mode, specify your authentication cookie from your browser (_simpleauth_sess)')
   .option('-a, --all', 'Download all bundles (default: false)', false)
@@ -49,6 +57,8 @@ if (ALLOWED_FORMATS.indexOf(commander.format) === -1) {
   console.error(colors.red('Invalid format selected.'))
   commander.help()
 }
+
+commander.format = (commander.format === 'zip') ? 'download' : commander.format
 
 const configDirs = paths.configDirs()
 const configName = packageInfo.name + '.json'
@@ -68,6 +78,9 @@ debug('cacheDir="%s"', cacheDir)
 mkdirp.sync(cacheDir, 0o700)
 const cachePath = {}
 cachePath.orders = path.join(cacheDir, 'orders.json')
+
+debug('commander.format=%s', commander.format)
+debug('commander.type=%s', commander.type)
 
 const flow = Breeze()
 const limiter = new Bottleneck({ // Limit concurrent downloads
@@ -225,8 +238,8 @@ function authenticate (next) {
 
 function loadOrders (next, session) {
   if (!commander.cache) {
-      return next(null, null, session)
-    }
+    return next(null, null, session)
+  }
 
   // fix: refactor to remove race condition between `fs.access(...)` and `require(...)`
   fs.access(cachePath.orders, (error) => {
@@ -324,17 +337,37 @@ function fetchOrders (next, orders, session) {
         }
 
         next(null, orders, session)
-      });
+      })
     })
   })
 }
 
 function filterOrders (next, orders, session) {
-    var filteredOrders = orders.filter((order) => {
-        return flatten(keypath.get(order, 'subproducts.[].downloads.[].platform')).indexOf('ebook') !== -1
-      })
+  var filteredOrders = orders.filter((order) => {
+    let include = false
+    // debug('order.platforms =>', flatten(keypath.get(order, 'subproducts.[].downloads.[].platform')))
+    if (commander.type === 'all') {
+      include = flatten(keypath.get(order, 'subproducts.[].downloads.[].platform')).some(v => SUPPORTED_PLATFORMS.some(p => p.localeCompare(v, undefined, { sensitivity: 'base' }) === 0))
+    } else {
+      include = flatten(keypath.get(order, 'subproducts.[].downloads.[].platform')).some(v => commander.type.localeCompare(v, undefined, { sensitivity: 'base' }) === 0)
+    }
+    // debug('match:platform =>', include)
+    // debug('order.names =>',flatten(keypath.get(order, 'subproducts.[].downloads.[].download_struct.[].name')))
 
-      next(null, filteredOrders, session)
+    if (include) {
+      if (commander.format === 'all') {
+        include = flatten(keypath.get(order, 'subproducts.[].downloads.[].download_struct.[].name')).some(v => SUPPORTED_FORMATS.concat('download').includes(v.toLowerCase()))
+      } else {
+        include = flatten(keypath.get(order, 'subproducts.[].downloads.[].download_struct.[].name')).some(v => commander.format.localeCompare(v, undefined, { sensitivity: 'base' }) === 0)
+      }
+    }
+    // debug('match:supported_types =>',flatten(keypath.get(order, 'subproducts.[].downloads.[].download_struct.[].name')).some(v => SUPPORTED_FORMATS.concat('download').includes(v.toLowerCase())))
+    // debug('match:type =>', flatten(keypath.get(order, 'subproducts.[].downloads.[].download_struct.[].name')).some(v => commander.format.localeCompare(v, undefined, {sensitivity: 'base'}) === 0))
+    // debug('include =>', include)
+    return include
+  })
+
+  next(null, filteredOrders, session)
 }
 
 function getWindowHeight () {
@@ -407,19 +440,21 @@ function normalizeFormat (format) {
     case 'pdf (hq)':
     case 'pdf (hd)':
       return 'pdf_hd'
-    case 'download':
-      return 'pdf'
+    // case 'download':
+    //   return 'pdf'
     default:
       return format.toLowerCase()
   }
 }
 
 function getExtension (format) {
-  switch (format.toLowerCase()) {
+  let extension = format.toLowerCase().replace(/^[.]+/, '')
+  debug('getExtension:format=', extension)
+  switch (extension) {
     case 'pdf_hd':
       return ' (hd).pdf'
     default:
-      return util.format('.%s', format)
+      return util.format('.%s', extension)
   }
 }
 
@@ -458,12 +493,17 @@ function checkSignatureMatch (filePath, download, callback) {
 function downloadItem (bundle, name, download, message, callback) {
   var downloadPath = path.resolve(commander.downloadFolder, sanitizeFilename(bundle))
 
+  debug('downloadItem:bundle =', bundle)
+  debug('downloadItem:name =', name)
+  debug('downloadItem:download =', download)
+
   ensureFolderCreated(downloadPath, (error) => {
     if (error) {
       return callback(error)
     }
 
-    var fileName = util.format('%s%s', name.trim(), getExtension(normalizeFormat(download.name)))
+    var fileName = util.format('%s%s', name.trim(), getExtension(normalizeFormat(path.parse(url.parse(download.url.web).pathname).ext)))
+    debug('fileName =', fileName)
     var filePath = path.resolve(downloadPath, sanitizeFilename(fileName))
 
     checkSignatureMatch(filePath, download, (error, matches) => {
@@ -508,7 +548,11 @@ function downloadBundles (next, bundles) {
 
     for (var subproduct of bundle.subproducts) {
       var filteredDownloads = subproduct.downloads.filter((download) => {
-        return download.platform === 'ebook'
+        if (commander.type !== 'all' && download.platform.localeCompare(commander.type, undefined, { standard: 'base' }) !== 0) {
+          return false
+        }
+
+        return SUPPORTED_PLATFORMS.indexOf(download.platform) !== -1
       })
 
       var downloadStructs = flatten(keypath.get(filteredDownloads, '[].download_struct'))
@@ -551,14 +595,15 @@ function downloadBundles (next, bundles) {
 
   async.each(downloads, (download, next) => {
     limiter.submit((next) => {
-      const message = util.format('Downloading %s - %s (%s) (%s)... (%s/%s)', download.bundle, download.name, download.download.name, download.download.human_size, colors.yellow(downloads.indexOf(download) + 1), colors.yellow(downloads.length))
+      const format = getExtension(normalizeFormat(path.parse(url.parse(download.download.url.web).pathname).ext)).toUpperCase().replace(/^[.]+/, '')
+      const message = util.format('Downloading %s - %s (%s) (%s)... (%s/%s)', download.bundle, download.name, format, download.download.human_size, colors.yellow(downloads.indexOf(download) + 1), colors.yellow(downloads.length))
       downloadItem(download.bundle, download.name, download.download, message, (error, skipped) => {
         if (error) {
           return next(error)
         }
 
         if (skipped) {
-          console.log('SKIPPED download of completed %s - %s (%s) (%s)... (%s/%s)', download.bundle, download.name, download.download.name, download.download.human_size, colors.yellow(downloads.indexOf(download) + 1), colors.yellow(downloads.length))
+          console.log('SKIPPED download of completed %s - %s (%s) (%s)... (%s/%s)', download.bundle, download.name, format, download.download.human_size, colors.yellow(downloads.indexOf(download) + 1), colors.yellow(downloads.length))
         }
 
         next()
