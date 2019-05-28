@@ -1,3 +1,11 @@
+<!DOCTYPE markdown><!-- markdownlint-disable no-inline-html -->
+<meta charset="utf-8" content="text/markdown" lang="en">
+<!-- -## editors ## (emacs/sublime) -*- coding: utf8-nix; tab-width: 2; mode: markdown; indent-tabs-mode: nil; basic-offset: 2; st-word_wrap: 'true' -*- ## (jEdit) :tabSize=2:indentSize=2:mode=markdown: ## (notepad++) vim:tabstop=2:syntax=markdown:expandtab:smarttab:softtabstop=2 ## modeline (see <https://archive.is/djTUD>@@<http://webcitation.org/66W3EhCAP> ) -->
+<!-- spell-checker:ignore expandtab markdownlint modeline smarttab softtabstop -->
+
+<!-- spell-checker:words Longman Löthberg -->
+<!-- spell-checker:ignore humblebundle epub mobi sess simpleauth -->
+
 # humblebundle-ebook-downloader
 
 An easy way to download ebooks from your humblebundle account
