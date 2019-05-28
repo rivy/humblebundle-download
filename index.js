@@ -57,7 +57,6 @@ function loadConfig (next) {
       if (error.code === 'ENOENT') {
         return next(null, {})
       }
-
       return next(error)
     }
 
