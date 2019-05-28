@@ -2,7 +2,7 @@
 /* eslint-env es6, node */
 // ## editors ## (emacs/sublime) -*- coding: utf8-nix; tab-width: 2; mode: javascript; indent-tabs-mode: nil; basic-offset: 2; -*- ## (jEdit) :tabSize=4:indentSize=4:mode=javascript: ## (notepad++) vim:tabstop=2:syntax=javascript:expandtab:smarttab:softtabstop=2 ## modeline (see <https://archive.is/djTUD>@@<http://webcitation.org/66W3EhCAP> )
 // spellchecker:ignore expandtab smarttab softtabstop modeline
-// spellchecker:ignore keypath epub mobi simpleauth subproduct subproducts gamekey humblebundle
+// spellchecker:ignore keypath epub mobi simpleauth subproduct subproducts gamekey humblebundle barsize
 
 const async = require('async')
 const colors = require('colors')
@@ -15,6 +15,7 @@ const mkdirp = require('mkdirp')
 const os = require('os')
 const packageInfo = require('./package.json')
 const path = require('path')
+const progress = require('cli-progress')
 const request = require('request')
 const sanitizeFilename = require('sanitize-filename')
 const url = require('url')
@@ -199,8 +200,6 @@ function authenticate (next) {
 }
 
 function fetchOrders (next, session) {
-  console.log('Fetching bundles...')
-
   request.get({
     url: 'https://www.humblebundle.com/api/v1/user/order?ajax=true',
     headers: getRequestHeaders(session),
@@ -216,12 +215,18 @@ function fetchOrders (next, session) {
 
     var total = response.body.length
     var done = 0
+    var progressBar = new progress.Bar({
+      // barsize: 50, // default == 40
+      format: 'Fetching bundles... [{bar}] ' + colors.yellow('{value}') + '/' + colors.yellow('{total}') + ' (' + colors.yellow('{percentage}%') + ')'
+      // hideCursor: true // ToDO: catch CTRL-C and re-enable; current CTRL-C exit from app causes loss of cursor display
+    })
 
     var orderInfoLimiter = new Bottleneck({
       maxConcurrent: 5,
       minTime: 500
     })
 
+    progressBar.start(total, done)
     async.concat(response.body, (item, next) => {
       orderInfoLimiter.submit((next) => {
         request.get({
@@ -237,11 +242,12 @@ function fetchOrders (next, session) {
             return next(new Error(util.format('Could not fetch orders, unknown error, status code:', response.statusCode)))
           }
 
-          console.log('Fetched bundle information... (%s/%s)', colors.yellow(++done), colors.yellow(total))
+          progressBar.update(++done)
           next(null, response.body)
         })
       }, next)
     }, (error, orders) => {
+      progressBar.stop()
       if (error) {
         return next(error)
       }
