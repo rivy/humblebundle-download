@@ -30,11 +30,14 @@ const userAgent = util.format(packageInfo.name + '/%s', packageInfo.version)
 const SUPPORTED_FORMATS = ['epub', 'mobi', 'pdf', 'pdf_hd', 'cbz']
 const ALLOWED_FORMATS = SUPPORTED_FORMATS.concat(['all']).sort()
 
+const ALLOWED_SORT_PROPERTIES = ['date', 'name'].sort()
+
 commander
   .version(packageInfo.version)
   .option('-d, --download-folder <download_folder>', 'Download folder', path.join(os.homedir(), 'Downloads', 'Humble Bundles'))
   .option('-l, --download-limit <download_limit>', 'Parallel download limit', 1)
   .option('-f, --format <format>', util.format('Format to download (%s)', ALLOWED_FORMATS.join(', ')), 'epub')
+  .option('-s, --sort-by <property>', util.format('Sort bundles by property (%s)', ALLOWED_SORT_PROPERTIES.join(', ')), 'date')
   .option('--auth-token <auth-token>', '(optional) for use in headless mode, specify your authentication cookie from your browser (_simpleauth_sess)')
   .option('-a, --all', 'Download all bundles (default: false)', false)
   .option('--cache-max-age <hours>', 'Maximum useful age of cached information', 24)
@@ -342,13 +345,16 @@ function getWindowHeight () {
 function displayOrders (next, orders) {
   var options = []
 
+  orders.sort((a, b) => {
+    if (commander.sortBy === 'name') {
+      return a.product.human_name.localeCompare(b.product.human_name)
+    }
+    return b.created.localeCompare(a.created)
+  })
+
   for (var order of orders) {
     options.push(order.product.human_name)
   }
-
-  options.sort((a, b) => {
-    return a.localeCompare(b)
-  })
 
   process.stdout.write('\x1Bc') // Clear console
 
@@ -367,7 +373,10 @@ function displayOrders (next, orders) {
 
 function sortBundles (next, bundles) {
   next(null, bundles.sort((a, b) => {
-    return a.product.human_name.localeCompare(b.product.human_name)
+    if (commander.sortBy === 'name') {
+      return a.product.human_name.localeCompare(b.product.human_name)
+    }
+    return b.created.localeCompare(a.created)
   }))
 }
 
