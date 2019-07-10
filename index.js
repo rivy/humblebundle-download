@@ -43,7 +43,7 @@ commander
   .version(packageInfo.version)
   .option('-d, --download-folder <download_folder>', 'Download folder', path.join(os.homedir(), 'Downloads', 'Humble Bundles'))
   .option('-l, --download-limit <download_limit>', 'Parallel download limit', 1)
-  .option('-f, --format <format>', util.format('Format to download (%s)', ALLOWED_FORMATS.join(', ')), 'ebook')
+  .option('-f, --format <format>', util.format('Format to download (%s)', ALLOWED_FORMATS.join(', ')), 'pdf')
   .option('-t, --type <type>', util.format('Type to download (%s)', ALLOWED_TYPES.join(', ')), 'ebook')
   .option('-s, --sort-by <property>', util.format('Sort bundles by property (%s)', ALLOWED_SORT_PROPERTIES.join(', ')), 'date')
   .option('--auth-token <auth-token>', '(optional) for use in headless mode, specify your authentication cookie from your browser (_simpleauth_sess)')
