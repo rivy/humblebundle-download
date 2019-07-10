@@ -373,7 +373,7 @@ function checkSignatureMatch (filePath, download, callback) {
   })
 }
 
-function downloadBook (bundle, name, download, callback) {
+function downloadItem (bundle, name, download, message, callback) {
   var downloadPath = path.resolve(commander.downloadFolder, sanitizeFilename(bundle))
 
   ensureFolderCreated(downloadPath, (error) => {
@@ -393,6 +393,7 @@ function downloadBook (bundle, name, download, callback) {
         return callback(null, true)
       }
 
+      console.log(message)
       var file = fs.createWriteStream(filePath)
 
       file.on('finish', () => {
@@ -468,14 +469,14 @@ function downloadBundles (next, bundles) {
 
   async.each(downloads, (download, next) => {
     limiter.submit((next) => {
-      console.log('Downloading %s - %s (%s) (%s)... (%s/%s)', download.bundle, download.name, download.download.name, download.download.human_size, colors.yellow(downloads.indexOf(download) + 1), colors.yellow(downloads.length))
-      downloadBook(download.bundle, download.name, download.download, (error, skipped) => {
+      const message = util.format('Downloading %s - %s (%s) (%s)... (%s/%s)', download.bundle, download.name, download.download.name, download.download.human_size, colors.yellow(downloads.indexOf(download) + 1), colors.yellow(downloads.length))
+      downloadItem(download.bundle, download.name, download.download, message, (error, skipped) => {
         if (error) {
           return next(error)
         }
 
         if (skipped) {
-          console.log('Skipped downloading of %s - %s (%s) (%s) - already exists... (%s/%s)', download.bundle, download.name, download.download.name, download.download.human_size, colors.yellow(downloads.indexOf(download) + 1), colors.yellow(downloads.length))
+          console.log('SKIPPED download of completed %s - %s (%s) (%s)... (%s/%s)', download.bundle, download.name, download.download.name, download.download.human_size, colors.yellow(downloads.indexOf(download) + 1), colors.yellow(downloads.length))
         }
 
         next()
