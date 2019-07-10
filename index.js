@@ -37,6 +37,8 @@ commander
   .option('-f, --format <format>', util.format('Format to download (%s)', ALLOWED_FORMATS.join(', ')), 'epub')
   .option('--auth-token <auth-token>', '(optional) for use in headless mode, specify your authentication cookie from your browser (_simpleauth_sess)')
   .option('-a, --all', 'Download all bundles (default: false)', false)
+  .option('--cache-max-age <hours>', 'Maximum useful age of cached information', 24)
+  .option('-C, --no-cache', 'Ignore cached bundle information')
   .option('--debug', 'Enable debug logging (default: false)', false)
   .parse(process.argv)
 
@@ -61,6 +63,8 @@ mkdirp.sync(path.dirname(configPath), 0o700)
 const cacheDir = path.join(paths(packageInfo.name).cache())
 debug('cacheDir="%s"', cacheDir)
 mkdirp.sync(cacheDir, 0o700)
+const cachePath = {}
+cachePath.orders = path.join(cacheDir, 'orders.json')
 
 const flow = Breeze()
 const limiter = new Bottleneck({ // Limit concurrent downloads
@@ -216,7 +220,49 @@ function authenticate (next) {
     .catch((error) => next(error))
 }
 
-function fetchOrders (next, session) {
+function loadOrders (next, session) {
+  if (!commander.cache) {
+      return next(null, null, session)
+    }
+
+  // fix: refactor to remove race condition between `fs.access(...)` and `require(...)`
+  fs.access(cachePath.orders, (error) => {
+    if (error) {
+      if (error.code === 'ENOENT') {
+        return next(null, null, session)
+      }
+      return next(error)
+    }
+
+    const now = new Date()
+    const msPerHour = 60 * 60 * 1000
+    const ordersAgeInHours = (now - fs.statSync(cachePath.orders).ctime) / msPerHour
+    debug('ordersAgeInHours =', ordersAgeInHours)
+    if (ordersAgeInHours > commander.cacheMaxAge) {
+      return next(null, null, session)
+    }
+
+    let orders
+
+    try {
+      orders = require(cachePath.orders)
+    } catch (ignore) {
+      orders = null
+    }
+
+    next(null, orders, session)
+  })
+}
+
+function saveOrders (orders, callback) {
+  fs.writeFile(cachePath.orders, JSON.stringify(orders, null, 4), 'utf8', callback)
+}
+
+function fetchOrders (next, orders, session) {
+  if (orders) {
+    return next(null, orders, session)
+  }
+
   request.get({
     url: 'https://www.humblebundle.com/api/v1/user/order?ajax=true',
     headers: getRequestHeaders(session),
@@ -269,13 +315,23 @@ function fetchOrders (next, session) {
         return next(error)
       }
 
-      var filteredOrders = orders.filter((order) => {
+      saveOrders(orders, (error) => {
+        if (error) {
+          return next(error)
+        }
+
+        next(null, orders, session)
+      });
+    })
+  })
+}
+
+function filterOrders (next, orders, session) {
+    var filteredOrders = orders.filter((order) => {
         return flatten(keypath.get(order, 'subproducts.[].downloads.[].platform')).indexOf('ebook') !== -1
       })
 
       next(null, filteredOrders, session)
-    })
-  })
 }
 
 function getWindowHeight () {
@@ -512,7 +568,9 @@ function downloadBundles (next, bundles) {
 flow.then(loadConfig)
 flow.then(validateSession)
 flow.when((session) => !session, authenticate)
+flow.then(loadOrders)
 flow.then(fetchOrders)
+flow.then(filterOrders)
 flow.when(!commander.all, displayOrders)
 flow.when(commander.all, sortBundles)
 flow.then(downloadBundles)
