@@ -90,18 +90,19 @@ const limiter = new Bottleneck({ // Limit concurrent downloads
 console.log(colors.green('Starting...'))
 
 function loadConfig (next) {
-  fs.access(configPath, (error) => {
+  fs.readFile(configPath, (error, data) => {
     if (error) {
       if (error.code === 'ENOENT') {
+        // no config file; continue without error
         return next(null, {})
       }
       return next(error)
     }
 
-    var config
+    let config
 
     try {
-      config = require(configPath)
+      config = JSON.parse(data)
     } catch (ignore) {
       config = {}
     }
@@ -241,10 +242,10 @@ function loadOrders (next, session) {
     return next(null, null, session)
   }
 
-  // fix: refactor to remove race condition between `fs.access(...)` and `require(...)`
-  fs.access(cachePath.orders, (error) => {
+  fs.readFile(cachePath.orders, (error, data) => {
     if (error) {
       if (error.code === 'ENOENT') {
+        // no cache file found; continue with <null> cache, without error
         return next(null, null, session)
       }
       return next(error)
@@ -261,7 +262,7 @@ function loadOrders (next, session) {
     let orders
 
     try {
-      orders = require(cachePath.orders)
+      orders = JSON.parse(data)
     } catch (ignore) {
       orders = null
     }
@@ -417,22 +418,6 @@ function flatten (list) {
   return list.reduce((a, b) => a.concat(Array.isArray(b) ? flatten(b) : b), [])
 }
 
-function ensureFolderCreated (folder, callback) {
-  fs.access(folder, (error) => {
-    if (error && error.code !== 'ENOENT') {
-      return callback(error)
-    }
-
-    mkdirp(folder, (error) => {
-      if (error) {
-        return callback(error)
-      }
-
-      callback()
-    })
-  })
-}
-
 function normalizeFormat (format) {
   switch (format.toLowerCase()) {
     case '.cbz':
@@ -459,35 +444,27 @@ function getExtension (format) {
 }
 
 function checkSignatureMatch (filePath, download, callback) {
-  fs.access(filePath, (error) => {
-    if (error) {
-      if (error.code === 'ENOENT') {
-        return callback()
-      }
+  var hashType = download.sha1 ? 'sha1' : 'md5'
+  var hashToVerify = download[hashType]
 
-      return callback(error)
+  var hash = crypto.createHash(hashType)
+  hash.setEncoding('hex')
+
+  var stream = fs.createReadStream(filePath)
+
+  stream.on('error', (error) => {
+    if (error.code === 'ENOENT') {
+      return callback()
     }
-
-    var hashType = download.sha1 ? 'sha1' : 'md5'
-    var hashToVerify = download[hashType]
-
-    var hash = crypto.createHash(hashType)
-    hash.setEncoding('hex')
-
-    var stream = fs.createReadStream(filePath)
-
-    stream.on('error', (error) => {
-      return callback(error)
-    })
-
-    stream.on('end', () => {
-      hash.end()
-
-      return callback(null, hash.read() === hashToVerify)
-    })
-
-    stream.pipe(hash)
+    return callback(error)
   })
+
+  stream.on('end', () => {
+    hash.end()
+    return callback(null, hash.read() === hashToVerify)
+  })
+
+  stream.pipe(hash)
 }
 
 function downloadItem (bundle, name, download, message, callback) {
@@ -497,7 +474,7 @@ function downloadItem (bundle, name, download, message, callback) {
   debug('downloadItem:name =', name)
   debug('downloadItem:download =', download)
 
-  ensureFolderCreated(downloadPath, (error) => {
+  mkdirp(downloadPath, 0o700, (error) => {
     if (error) {
       return callback(error)
     }
