@@ -5,6 +5,7 @@
 
 <!-- spell-checker:words Longman Löthberg -->
 <!-- spell-checker:ignore humblebundle epub mobi sess simpleauth -->
+<!-- markdownlint-disable commands-show-output -->
 
 # humblebundle-ebook-downloader
 
@@ -36,8 +37,10 @@ $ humblebundle-ebook-downloader --help
 ```
 
 ## Contributors
+
 - [J. Longman](https://github.com/jlongman)
 - [Johannes Löthberg](https://github.com/kyrias)
 
 ## License
+
 See [LICENSE.md](LICENSE.md)

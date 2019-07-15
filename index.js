@@ -494,7 +494,7 @@ flow.when(commander.all, sortBundles)
 flow.then(downloadBundles)
 
 flow.catch((error) => {
-  console.error(colors.red('An error occured, exiting.'))
+  console.error(colors.red('An error occurred, exiting.'))
   console.error(error)
   process.exit(1)
 })
