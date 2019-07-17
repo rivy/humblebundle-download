@@ -11,6 +11,7 @@ const crypto = require('crypto')
 const fs = require('fs')
 const inquirer = require('inquirer')
 const keypath = require('nasa-keypath')
+const locatePath = require('locate-path')
 const mkdirp = require('mkdirp')
 const os = require('os')
 const packageInfo = require('./package.json')
@@ -60,20 +61,12 @@ if (ALLOWED_FORMATS.indexOf(commander.format) === -1) {
 
 commander.format = (commander.format === 'zip') ? 'download' : commander.format
 
-const configDirs = paths.configDirs()
-const configName = packageInfo.name + '.json'
-let configPathFound = false
-configDirs.forEach(item => {
-  let _path = path.join(item, configName)
-  if (!configPathFound && fs.existsSync(_path)) {
-    configPathFound = _path
-  }
-})
-const configPath = configPathFound || path.join(configDirs[0], configName)
+const possibleConfigPaths = paths.configDirs().concat(paths.configDirs({ isolated: !paths.$isolated() })).map(v => path.join(v, packageInfo.name + '.json'))
+const configPath = locatePath.sync(possibleConfigPaths) || possibleConfigPaths[0]
 debug('configPath="%s"', configPath)
 mkdirp.sync(path.dirname(configPath), 0o700)
 
-const cacheDir = path.join(paths(packageInfo.name).cache())
+const cacheDir = path.join(paths.cache())
 debug('cacheDir="%s"', cacheDir)
 mkdirp.sync(cacheDir, 0o700)
 const cachePath = {}
