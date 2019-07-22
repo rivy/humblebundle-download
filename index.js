@@ -8,11 +8,10 @@ const async = require('async')
 const colors = require('colors')
 const commander = require('commander')
 const crypto = require('crypto')
-const fs = require('fs')
+const fs = require('fs-extra')
 const inquirer = require('inquirer')
 const keypath = require('nasa-keypath')
 const locatePath = require('locate-path')
-const mkdirp = require('mkdirp')
 const os = require('os')
 const packageInfo = require('./package.json')
 const path = require('path')
@@ -64,11 +63,11 @@ commander.format = (commander.format === 'zip') ? 'download' : commander.format
 const possibleConfigPaths = paths.configDirs().concat(paths.configDirs({ isolated: !paths.$isolated() })).map(v => path.join(v, packageInfo.name + '.json'))
 const configPath = locatePath.sync(possibleConfigPaths) || possibleConfigPaths[0]
 debug('configPath="%s"', configPath)
-mkdirp.sync(path.dirname(configPath), 0o700)
+fs.mkdirpSync(path.dirname(configPath), 0o700)
 
 const cacheDir = path.join(paths.cache())
 debug('cacheDir="%s"', cacheDir)
-mkdirp.sync(cacheDir, 0o700)
+fs.mkdirpSync(cacheDir, 0o700)
 const cachePath = {}
 cachePath.orders = path.join(cacheDir, 'orders.json')
 
@@ -467,7 +466,7 @@ function downloadItem (bundle, name, download, message, callback) {
   debug('downloadItem:name =', name)
   debug('downloadItem:download =', download)
 
-  mkdirp(downloadPath, 0o700, (error) => {
+  fs.mkdirp(downloadPath, 0o700, (error) => {
     if (error) {
       return callback(error)
     }
