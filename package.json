@@ -19,6 +19,12 @@
     "J. Longman (https://github.com/jlongman)",
     "Johannes Löthberg (https://github.com/kyrias)"
   ],
+  "keywords": [
+    "cli",
+    "download",
+    "downloader",
+    "humblebundle"
+  ],
   "dependencies": {
     "async": "^2.6.2",
     "bottleneck": "^2.17.1",
