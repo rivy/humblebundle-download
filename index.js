@@ -61,7 +61,7 @@ if (ALLOWED_FORMATS.indexOf(commander.format) === -1) {
 commander.format = (commander.format === 'zip') ? 'download' : commander.format
 
 const possibleConfigPaths = paths.configDirs().concat(paths.configDirs({ isolated: !paths.$isolated() })).map(v => path.join(v, packageInfo.name + '.json'))
-const configPath = locatePath.sync(possibleConfigPaths) || possibleConfigPaths[0]
+const configPath = locatePath.sync(possibleConfigPaths, { type: 'file' }) || possibleConfigPaths[0]
 debug('configPath="%s"', configPath)
 fs.mkdirpSync(path.dirname(configPath), 0o700)
 
