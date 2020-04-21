@@ -7,10 +7,10 @@
     "humblebundle-download": "index.js"
   },
   "scripts": {
-    "default": "node index.js",
-    "install": "npm install -g .",
-    "test": "standard",
-    "test:fix": "npx standard --fix"
+    "default": "node index.js",       "## default ## run package":"",
+    "install": "npm install -g .",    "## install ## install package as a CLI command to local machine (as a global command)":"",
+    "test": "standard",               "## test ## test package with `standard`":"",
+    "test:fix": "npx standard --fix", "## test:fix ## fix `standard` testing issues":""
   },
   "repository": {
     "type": "git",
