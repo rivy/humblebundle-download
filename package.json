@@ -7,7 +7,10 @@
     "humblebundle-download": "index.js"
   },
   "scripts": {
-    "test": "standard"
+    "default": "node index.js",
+    "install": "npm install -g .",
+    "test": "standard",
+    "test:fix": "npx standard --fix"
   },
   "repository": {
     "type": "git",
