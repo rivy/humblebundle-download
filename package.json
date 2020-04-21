@@ -7,10 +7,28 @@
     "humblebundle-download": "index.js"
   },
   "scripts": {
-    "default": "node index.js",       "## default ## run package":"",
-    "install": "npm install -g .",    "## install ## install package as a CLI command to local machine (as a global command)":"",
-    "test": "standard",               "## test ## test package with `standard`":"",
-    "test:fix": "npx standard --fix", "## test:fix ## fix `standard` testing issues":""
+    "## default ## run package ##": "",
+    "default": "node index.js",
+    "## fix ## fix package issues ##": "",
+    "fix": "run-p fix:*",
+    "## fix:lint ## fix `standard` issues ##": "",
+    "fix:lint": "npx standard --fix",
+    "## help ## display help ##": "",
+    "help": "< package.json node -e \"s = {p:'',e:'npm'}; if (new String(process.env.npm_execpath).match(/yarn.js$/)) { s = {p:'\\n',e:'yarn'}; }; console.log('%susage: \\`%s run TARGET [TARGET..]\\`\\n\\nTARGETs:\\n', s.p, s.e); re = /^.*\\x22##\\s(.*)\\s##\\s(.*)\\s##\\x22.*$/; require('readline').createInterface({ input: process.stdin, output: process.stdout, terminal: false }).on('line', function(line){ if (match = re.exec(line)) { console.log('%s %s', match[1].padEnd(19), match[2]); } });\"",
+    "## install-local ## install package as a CLI command to local machine (as a global command) ##": "",
+    "install-local": "npm install -g .",
+    "## lint ## check for package lint ##": "",
+    "lint": "run-p lint:*",
+    "## lint:spell ## check for spelling errors with `cSpell` ##": "",
+    "lint:spell": "run-s -s _:min-node-8 _:spellcheck || run-s -s _:max-node-6 _:spellcheck-warn",
+    "## lint:style ## check for style imperfections with `standard` ##": "",
+    "lint:style": "standard",
+    "## test ## test package ##": "",
+    "test": "run-s lint",
+    "_:min-node-8": "is-node-modern 8",
+    "_:max-node-6": "is-node-not-modern 8",
+    "_:spellcheck": "cspell *.js *.ts readme.md --no-summary",
+    "_:spellcheck-warn": "npx shx echo \"lint:spell WARN Spell-check skipped [for NodeJS < v8]\""
   },
   "repository": {
     "type": "git",
@@ -46,6 +64,13 @@
     "xdg-app-paths": "^4.0.0"
   },
   "devDependencies": {
+    "cspell": "^3.2.14",
+    "eslint": "^5.16.0",
+    "is-node-modern": "^1.0.0",
+    "npm-run-all": "^4.1.5",
+    "readline": "^1.3.0",
+    "shelljs": "^0.8.3",
+    "shx": "^0.3.2",
     "standard": "^12.0.1"
   }
 }
