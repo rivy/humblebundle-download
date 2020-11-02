@@ -27,7 +27,7 @@
     "test": "run-s lint",
     "_:min-node-8": "is-node-modern 8",
     "_:max-node-6": "is-node-not-modern 8",
-    "_:spellcheck": "cspell *.js *.ts readme.md --no-summary",
+    "_:spellcheck": "cspell *.js *.ts LICENSE{,.*} README{,.*} --no-summary",
     "_:spellcheck-warn": "npx shx echo \"lint:spell WARN Spell-check skipped [for NodeJS < v8]\""
   },
   "repository": {
