@@ -2,14 +2,13 @@
 /* eslint-env es6, node */
 // ## editors ## (emacs/sublime) -*- coding: utf8-nix; tab-width: 2; mode: javascript; indent-tabs-mode: nil; basic-offset: 2; -*- ## (jEdit) :tabSize=4:indentSize=4:mode=javascript: ## (notepad++) vim:tabstop=2:syntax=javascript:expandtab:smarttab:softtabstop=2 ## modeline (see <https://archive.is/djTUD>@@<http://webcitation.org/66W3EhCAP> )
 // spellchecker:ignore expandtab smarttab softtabstop modeline
-// spellchecker:ignore keypath epub flac mobi simpleauth subproduct subproducts gamekey humblebundle barsize
+// spellchecker:ignore keypath epub flac mobi simpleauth subproduct subproducts gamekey humblebundle barsize linebyline
 
 const async = require('async')
 const colors = require('colors')
 const commander = require('commander')
 const crypto = require('crypto')
 const fs = require('fs-extra')
-const inquirer = require('inquirer')
 const keypath = require('nasa-keypath')
 const locatePath = require('locate-path')
 const os = require('os')
@@ -17,6 +16,7 @@ const packageInfo = require('./package.json')
 const path = require('path')
 const paths = require('xdg-app-paths')(packageInfo.name)
 const progress = require('cli-progress')
+const prompts = require('prompts')
 const request = require('request')
 const sanitizeFilename = require('sanitize-filename')
 const url = require('url')
@@ -384,16 +384,19 @@ function displayOrders (next, orders) {
 
   process.stdout.write('\x1Bc') // Clear console
 
-  inquirer.prompt({
-    type: 'checkbox',
+  prompts.prompt({
+    type: 'multiselect',
     name: 'bundle',
     message: 'Select bundles to download',
     choices: options,
-    pageSize: getWindowHeight() - 2
+    optionsPerPage: getWindowHeight() - 2,
+    hint: '(<SPACE> to select, <ENTER> to finish, <ESC> to exit)',
+    instructions: false,
   }).then((answers) => {
-    next(null, orders.filter((item) => {
-      return answers.bundle.indexOf(item.product.human_name) !== -1
-    }))
+    answers = answers || {}
+    answers.bundle = answers.bundle || []
+    // console.log(answers)
+    next(null, orders.filter((_item, idx) => answers.bundle.includes(idx)))
   })
 }
 
