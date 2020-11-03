@@ -22,6 +22,7 @@ module.exports = {
 		'eslint-comments/no-unused-disable': 'error',
 		'import/order': ['error', { 'newlines-between': 'always', alphabetize: { order: 'asc' } }],
 		'sort-imports': ['error', { ignoreDeclarationSort: true, ignoreCase: true }],
+		'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
 	},
 	overrides: [
 		{
