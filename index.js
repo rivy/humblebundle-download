@@ -8,6 +8,7 @@ const async = require('async')
 const colors = require('colors')
 const commander = require('commander')
 const crypto = require('crypto')
+const enquirer = require('enquirer')
 const fs = require('fs-extra')
 const keypath = require('nasa-keypath')
 const locatePath = require('locate-path')
@@ -16,7 +17,6 @@ const packageInfo = require('./package.json')
 const path = require('path')
 const paths = require('xdg-app-paths')(packageInfo.name)
 const progress = require('cli-progress')
-const prompts = require('prompts')
 const request = require('request')
 const sanitizeFilename = require('sanitize-filename')
 const url = require('url')
@@ -384,20 +384,34 @@ function displayOrders (next, orders) {
 
   process.stdout.write('\x1Bc') // Clear console
 
-  prompts.prompt({
-    type: 'multiselect',
+  let prompt = new enquirer.MultiSelect({
     name: 'bundle',
     message: 'Select bundles to download',
     choices: options,
-    optionsPerPage: getWindowHeight() - 2,
-    hint: '(<SPACE> to select, <ENTER> to finish, <ESC> to exit)',
-    instructions: false,
-  }).then((answers) => {
-    answers = answers || {}
-    answers.bundle = answers.bundle || []
-    // console.log(answers)
-    next(null, orders.filter((_item, idx) => answers.bundle.includes(idx)))
-  })
+    limit: Math.min(options.length, getWindowHeight() - 1),
+    hint: '(<SPACE> to select, <ENTER> to confirm selection(s), <ESC> to exit)',
+    indicator(_state, choice) {
+      if (choice.enabled) {
+        return colors.green('✓'); // or '⬤'
+      }
+      return colors.dim.gray('·');
+    },
+    // enable <PageUP> to move the cursor up a page, instead of the default shrink displayed list size
+    pageUp() {
+      for (let i = 0; i < this.limit - 1; i++) { this.up() }
+      return this.render();
+    },
+    // enable <PageDOWN> to move the cursor down a page, instead of the default enlarge displayed list size
+    pageDown() {
+      for (let i = 0; i < this.limit - 1; i++) { this.down() }
+      return this.render();
+    }
+  }).run().then((answers = []) => {
+    // console.log(answers);
+    next(null, orders.filter((item) => {
+      return answers.indexOf(item.product.human_name) !== -1;
+    }))
+  }).catch(() => { next(null, []); })
 }
 
 function sortBundles (next, bundles) {
