@@ -481,7 +481,9 @@ function displayOrders(next, orders) {
 		options.push(order.product.human_name);
 	}
 
-	process.stdout.write('\x1Bc'); // Clear console
+	// ref: [alternate screen buffer](https://stackoverflow.com/questions/39188508/how-curses-preserves-screen-contents)
+	// process.stdout.write('\x1B[?1049h'); // use "alternate screen buffer" (no scroll-back); '\x1B[?1049h' == "restore original screen buffer"
+	// process.stdout.write('\x1Bc'); // clear console
 
 	const prompt = new enquirer.MultiSelect({
 		name: 'bundle',
