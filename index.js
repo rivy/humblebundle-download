@@ -4,27 +4,31 @@
 // spell-checker:ignore expandtab smarttab softtabstop modeline
 // spell-checker:ignore keypath epub flac mobi simpleauth subproduct subproducts gamekey humblebundle barsize linebyline
 
-const async = require('async');
-const colors = require('colors');
-const commander = require('commander');
 const crypto = require('crypto');
-const enquirer = require('enquirer');
-const fs = require('fs-extra');
-const keypath = require('nasa-keypath');
-const locatePath = require('locate-path');
 const os = require('os');
-const packageInfo = require('./package.json');
 const path = require('path');
-const paths = require('xdg-app-paths')(packageInfo.name);
-const progress = require('cli-progress');
 const readline = require('readline');
-const request = require('request');
-const sanitizeFilename = require('sanitize-filename');
 const url = require('url');
 const util = require('util');
-const Bottleneck = require('bottleneck');
-const Breeze = require('breeze');
-const Nightmare = require('nightmare');
+
+const async = require('async');
+const bottleneck = require('bottleneck');
+const breeze = require('breeze');
+const cliProgress = require('cli-progress');
+const colors = require('colors');
+const commander = require('commander');
+const enquirer = require('enquirer');
+const fs = require('fs-extra');
+const locatePath = require('locate-path');
+const keypath = require('nasa-keypath');
+const nightmare = require('nightmare');
+const request = require('request');
+const sanitizeFilename = require('sanitize-filename');
+
+const packageInfo = require('./package.json');
+
+// eslint-disable-next-line import/order
+const xdgAppPaths = require('xdg-app-paths')(packageInfo.name);
 
 const userAgent = util.format(packageInfo.name + '/%s', packageInfo.version);
 
@@ -91,15 +95,15 @@ if (ALLOWED_FORMATS.indexOf(commander.format) === -1) {
 
 commander.format = commander.format === 'zip' ? 'download' : commander.format;
 
-const possibleConfigPaths = paths
+const possibleConfigPaths = xdgAppPaths
 	.configDirs()
-	.concat(paths.configDirs({ isolated: !paths.$isolated() }))
+	.concat(xdgAppPaths.configDirs({ isolated: !xdgAppPaths.$isolated() }))
 	.map((v) => path.join(v, packageInfo.name + '.json'));
 const configPath = locatePath.sync(possibleConfigPaths, { type: 'file' }) || possibleConfigPaths[0];
 debug('configPath="%s"', configPath);
 fs.mkdirpSync(path.dirname(configPath), 0o700);
 
-const cacheDir = path.join(paths.cache());
+const cacheDir = path.join(xdgAppPaths.cache());
 debug('cacheDir="%s"', cacheDir);
 fs.mkdirpSync(cacheDir, 0o700);
 const cachePath = {};
@@ -108,8 +112,8 @@ cachePath.orders = path.join(cacheDir, 'orders.json');
 debug('commander.format=%s', commander.format);
 debug('commander.type=%s', commander.type);
 
-const flow = Breeze();
-const limiter = new Bottleneck({
+const flow = breeze();
+const limiter = new bottleneck({
 	// Limit concurrent downloads
 	maxConcurrent: commander.downloadLimit,
 });
@@ -208,13 +212,13 @@ function debug() {
 function authenticate(next) {
 	console.log('Authenticating...');
 
-	var nightmare = Nightmare({
+	var browser = nightmare({
 		show: true,
 		width: 800,
 		height: 600,
 	});
 
-	nightmare.useragent(userAgent);
+	browser.useragent(userAgent);
 
 	var handledRedirect = false;
 
@@ -235,7 +239,7 @@ function authenticate(next) {
 		debug('Handled redirect for url %s', targetUrl);
 		handledRedirect = true;
 
-		nightmare.cookies
+		browser.cookies
 			.get({
 				secure: true,
 				name: '_simpleauth_sess',
@@ -245,7 +249,7 @@ function authenticate(next) {
 					return next(new Error('Could not get session cookie'));
 				}
 
-				nightmare._endNow();
+				browser._endNow();
 
 				saveConfig(
 					{
@@ -264,7 +268,7 @@ function authenticate(next) {
 			.catch((error) => next(error));
 	}
 
-	nightmare.on(
+	browser.on(
 		'did-get-redirect-request',
 		(event, sourceUrl, targetUrl, isMainFrame, responseCode, requestMethod) => {
 			debug('did-get-redirect-request: %s %s', sourceUrl, targetUrl);
@@ -272,12 +276,12 @@ function authenticate(next) {
 		}
 	);
 
-	nightmare.on('will-navigate', (event, targetUrl) => {
+	browser.on('will-navigate', (event, targetUrl) => {
 		debug('will-navigate: %s', targetUrl);
 		handleRedirect(targetUrl);
 	});
 
-	nightmare
+	browser
 		.goto('https://www.humblebundle.com/login?goto=%2Fhome%2Flibrary')
 		.then()
 		.catch((error) => next(error));
@@ -347,7 +351,7 @@ function fetchOrders(next, orders, session) {
 
 			var total = response.body.length;
 			var done = 0;
-			var progressBar = new progress.Bar({
+			var progressBar = new cliProgress.Bar({
 				// barsize: 50, // default == 40
 				format:
 					'Fetching bundles... [{bar}] ' +
@@ -360,7 +364,7 @@ function fetchOrders(next, orders, session) {
 				// hideCursor: true // ToDO: catch CTRL-C and re-enable; current CTRL-C exit from app causes loss of cursor display
 			});
 
-			var orderInfoLimiter = new Bottleneck({
+			var orderInfoLimiter = new bottleneck({
 				maxConcurrent: 5,
 				minTime: 500,
 			});
