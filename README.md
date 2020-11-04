@@ -68,15 +68,14 @@ See [LICENSE.md](LICENSE.md)
 <!-- badge references -->
 
 [git-url]: https://github.com/rivy/humblebundle-download
-
 [npm-image]: https://img.shields.io/npm/v/humblebundle-download.svg?style=flat
 [npm-url]: https://npmjs.org/package/humblebundle-download
-
 [downloads-image]: https://img.shields.io/npm/dm/humblebundle-download.svg?style=flat
 [downloads-url]: https://npmjs.org/package/humblebundle-download
 [license-image]: https://img.shields.io/npm/l/xdg-app-paths.svg?style=flat
 [license-url]: license
 [style-image]: https://img.shields.io/badge/code_style-standard-darkcyan.svg
 [style-url]: https://standardjs.com
+
 <!-- [style-image]: https://img.shields.io/badge/code_style-XO-darkcyan.svg
 [style-url]: https://github.com/xojs/xo -->
