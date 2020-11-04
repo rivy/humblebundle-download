@@ -270,7 +270,7 @@ function authenticate(next) {
 
 	browser.on(
 		'did-get-redirect-request',
-		(event, sourceUrl, targetUrl, isMainFrame, responseCode, requestMethod) => {
+		(_event, sourceUrl, targetUrl, _isMainFrame, _responseCode, _requestMethod) => {
 			debug('did-get-redirect-request: %s %s', sourceUrl, targetUrl);
 			handleRedirect(targetUrl);
 		}
