@@ -205,7 +205,7 @@ function saveConfig(config, callback) {
 
 function debug() {
 	if (commander.debug) {
-		console.log(colors.yellow('[DEBUG] ' + util.format.apply(this, arguments)));
+		console.error(colors.yellow('[DEBUG] ' + util.format.apply(this, arguments)));
 	}
 }
 
