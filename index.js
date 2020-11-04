@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /* eslint-env es6, node */
 // ## editors ## (emacs/sublime) -*- coding: utf8-nix; tab-width: 2; mode: javascript; indent-tabs-mode: nil; basic-offset: 2; -*- ## (jEdit) :tabSize=4:indentSize=4:mode=javascript: ## (notepad++) vim:tabstop=2:syntax=javascript:expandtab:smarttab:softtabstop=2 ## modeline (see <https://archive.is/djTUD>@@<http://webcitation.org/66W3EhCAP> )
-// spellchecker:ignore expandtab smarttab softtabstop modeline
-// spellchecker:ignore keypath epub flac mobi simpleauth subproduct subproducts gamekey humblebundle barsize linebyline
+// spell-checker:ignore expandtab smarttab softtabstop modeline
+// spell-checker:ignore keypath epub flac mobi simpleauth subproduct subproducts gamekey humblebundle barsize linebyline
 
 const async = require('async');
 const colors = require('colors');
