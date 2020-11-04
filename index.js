@@ -17,6 +17,7 @@ const packageInfo = require('./package.json');
 const path = require('path');
 const paths = require('xdg-app-paths')(packageInfo.name);
 const progress = require('cli-progress');
+const readline = require('readline');
 const request = require('request');
 const sanitizeFilename = require('sanitize-filename');
 const url = require('url');
@@ -40,6 +41,15 @@ const ALLOWED_FORMATS = SUPPORTED_FORMATS.concat(['all']).sort();
 const ALLOWED_TYPES = SUPPORTED_PLATFORMS.concat(['all']).sort();
 
 const ALLOWED_SORT_PROPERTIES = ['date', 'name'].sort();
+
+// work-around for "hang" after 'enquirer' <ESCAPE>/cancel() on windows platforms; see <https://github.com/enquirer/enquirer/issues/245>
+// * arises from "node" bug after Node-v10.2 thru Node-v14.6 => see <https://github.com/nodejs/node/issues/31762>
+// ToDO: keep apprised of any fix for this via `enquirer`
+const readlineOldClose = readline.Interface.prototype.close;
+readline.Interface.prototype.close = function () {
+	this.terminal = false;
+	readlineOldClose.call(this);
+};
 
 commander
 	.version(packageInfo.version)
@@ -469,7 +479,7 @@ function displayOrders(next, orders) {
 
 	process.stdout.write('\x1Bc'); // Clear console
 
-	let prompt = new enquirer.MultiSelect({
+	const prompt = new enquirer.MultiSelect({
 		name: 'bundle',
 		message: 'Select bundles to download',
 		choices: options,
@@ -495,19 +505,18 @@ function displayOrders(next, orders) {
 			}
 			return this.render();
 		},
-	})
+	});
+
+	prompt
 		.run()
+		.catch(() => {}) // empty selections throw an `alert()` (with no information) => so, ignore all errors
 		.then((answers = []) => {
 			// console.log(answers);
-			next(
-				null,
-				orders.filter((item) => {
-					return answers.indexOf(item.product.human_name) !== -1;
-				})
-			);
-		})
-		.catch(() => {
-			next(null, []);
+			const o = orders.filter((item) => {
+				return answers.indexOf(item.product.human_name) !== -1;
+			});
+			// console.log(o);
+			next(null, o);
 		});
 }
 
