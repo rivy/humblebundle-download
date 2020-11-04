@@ -7,7 +7,7 @@
 <!-- spell-checker:ignore humblebundle epub flac mobi sess simpleauth -->
 <!-- markdownlint-disable commands-show-output -->
 
-# [humblebundle-download][git-url]
+# [`humblebundle-download`][git-url]
 
 > An easy way to download files from your humblebundle account
 > <br/> &bull; an enhanced fork of [DMarby/humblebundle-ebook-downloader](https://github.com/DMarby/humblebundle-ebook-downloader)
