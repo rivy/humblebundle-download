@@ -111,6 +111,7 @@ cachePath.orders = path.join(cacheDir, 'orders.json');
 
 debug('commander.format=%s', commander.format);
 debug('commander.type=%s', commander.type);
+debug('commander.downloadFolder="%s"', commander.downloadFolder);
 
 const flow = breeze();
 const limiter = new bottleneck({
