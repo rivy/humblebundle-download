@@ -4,6 +4,8 @@
 // spell-checker:ignore expandtab smarttab softtabstop modeline
 // spell-checker:ignore keypath epub flac mobi simpleauth subproduct subproducts gamekey humblebundle barsize linebyline
 
+process.noDeprecation = true; // [NodeJS v21+] suppress "[DEP0040] DeprecationWarning: The `punycode` module is deprecated."
+
 const crypto = require('crypto');
 const os = require('os');
 const path = require('path');
