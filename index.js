@@ -68,12 +68,12 @@ commander
 	.option(
 		'-f, --format <format>',
 		util.format('Format to download (%s)', ALLOWED_FORMATS.join(', ')),
-		'pdf'
+		'all'
 	)
 	.option(
 		'-t, --type <type>',
 		util.format('Type to download (%s)', ALLOWED_TYPES.join(', ')),
-		'ebook'
+		'all'
 	)
 	.option(
 		'-s, --sort-by <property>',
