@@ -253,7 +253,7 @@ function authenticate(next) {
 			return;
 		}
 
-		debug('Handled redirect for url %s', targetUrl);
+		debug('handleRedirect(): Handled redirect for url %s', targetUrl);
 		handledRedirect = true;
 
 		browser.cookies
@@ -288,13 +288,13 @@ function authenticate(next) {
 	browser.on(
 		'did-get-redirect-request',
 		(_event, sourceUrl, targetUrl, _isMainFrame, _responseCode, _requestMethod) => {
-			debug('did-get-redirect-request: %s %s', sourceUrl, targetUrl);
+			debug('handleRedirect(): did-get-redirect-request: %s %s', sourceUrl, targetUrl);
 			handleRedirect(targetUrl);
 		}
 	);
 
 	browser.on('will-navigate', (event, targetUrl) => {
-		debug('will-navigate: %s', targetUrl);
+		debug('handleRedirect(): will-navigate: %s', targetUrl);
 		handleRedirect(targetUrl);
 	});
 
@@ -321,7 +321,7 @@ function loadOrders(next, session) {
 		const now = new Date();
 		const msPerHour = 60 * 60 * 1000;
 		const ordersAgeInHours = (now - fs.statSync(cachePath.orders).ctime) / msPerHour;
-		debug('ordersAgeInHours =', ordersAgeInHours);
+		debug('loadOrders():', { ordersAgeInHours });
 		if (ordersAgeInHours > commander.cacheMaxAge) {
 			return next(null, null, session);
 		}
@@ -571,7 +571,7 @@ function normalizeFormatName(formatName) {
 }
 
 function formatNameToExtension(formatName, urlPathExt) {
-	debug('formatNameToExtension:', { formatName, urlPathExt });
+	debug('formatNameToExtension():', { formatName, urlPathExt });
 	const formatInNormalForm = normalizeFormatName(formatName);
 	const urlExtInNormalForm = urlPathExt.trim().replace(/^[.]+/, '').toLowerCase();
 	const isArchive = SUPPORTED_ARCHIVE_FORMATS.indexOf(urlExtInNormalForm) !== -1;
@@ -613,9 +613,9 @@ function checkSignatureMatch(filePath, download, callback) {
 function downloadItem(bundle, name, download, message, callback) {
 	var downloadPath = path.resolve(commander.downloadFolder, sanitizeFilename(bundle));
 
-	debug('downloadItem:bundle =', bundle);
-	debug('downloadItem:name =', name);
-	debug('downloadItem:download =', download);
+	debug('downloadItem():', { bundle });
+	debug('downloadItem():', { name });
+	debug('downloadItem():', { download });
 
 	fs.mkdirp(downloadPath, 0o700, (error) => {
 		if (error) {
