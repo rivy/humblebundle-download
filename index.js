@@ -35,14 +35,14 @@ const xdgAppPaths = require('xdg-app-paths')(packageInfo.name);
 const userAgent = util.format(packageInfo.name + '/%s', packageInfo.version);
 
 const SUPPORTED_PLATFORMS = ['audio', 'ebook', 'video'];
-const SUPPORTED_AUDIO_FORMATS = ['flac', 'mp3'];
+const SUPPORTED_AUDIO_FORMATS = ['flac', 'mp3', 'ogg'];
 const SUPPORTED_EBOOK_FORMATS = ['epub', 'mobi', 'pdf', 'pdf_hd'];
-const SUPPORTED_COMIC_FORMATS = ['cbz'];
+const SUPPORTED_COMIC_FORMATS = ['cbr', 'cbz'];
 // const SUPPORTED_VIDEO_FORMATS = ['download']
-const SUPPORTED_GENERAL_FORMATS = ['zip'];
+const SUPPORTED_ARCHIVE_FORMATS = ['zip'];
 const SUPPORTED_FORMATS = SUPPORTED_AUDIO_FORMATS.concat(SUPPORTED_EBOOK_FORMATS)
 	.concat(SUPPORTED_COMIC_FORMATS)
-	.concat(SUPPORTED_GENERAL_FORMATS);
+	.concat(SUPPORTED_ARCHIVE_FORMATS);
 const ALLOWED_FORMATS = SUPPORTED_FORMATS.concat(['all']).sort();
 const ALLOWED_TYPES = SUPPORTED_PLATFORMS.concat(['all']).sort();
 
@@ -559,29 +559,31 @@ function flatten(list) {
 	return list.reduce((a, b) => a.concat(Array.isArray(b) ? flatten(b) : b), []);
 }
 
-function normalizeFormat(format) {
-	switch (format.toLowerCase()) {
-		case '.cbz':
-			return 'cbz';
+function normalizeFormatName(formatName) {
+	// formats may have varying case and also may have leading '.'
+	let normalForm = formatName.trim().replace(/^[.]+/, '').toLowerCase();
+	switch (normalForm) {
 		case 'pdf (hq)':
 		case 'pdf (hd)':
-			return 'pdf_hd';
-		// case 'download':
-		//   return 'pdf'
-		default:
-			return format.toLowerCase();
+			normalForm = 'pdf_hd';
 	}
+	return normalForm;
 }
 
-function getExtension(format) {
-	let extension = format.toLowerCase().replace(/^[.]+/, '');
-	debug('getExtension:format=', extension);
+function formatNameToExtension(formatName, urlPathExt) {
+	debug('formatNameToExtension:', { formatName, urlPathExt });
+	const formatInNormalForm = normalizeFormatName(formatName);
+	const urlExtInNormalForm = urlPathExt.trim().replace(/^[.]+/, '').toLowerCase();
+	const isArchive = SUPPORTED_ARCHIVE_FORMATS.indexOf(urlExtInNormalForm) !== -1;
+	let extension =
+		isArchive && formatInNormalForm !== urlExtInNormalForm
+			? `(${formatInNormalForm}).${urlExtInNormalForm}`
+			: formatInNormalForm;
 	switch (extension) {
 		case 'pdf_hd':
-			return ' (hd).pdf';
-		default:
-			return util.format('.%s', extension);
+			extension = '(HD).pdf';
 	}
+	return `.${extension}`;
 }
 
 function checkSignatureMatch(filePath, download, callback) {
@@ -620,13 +622,14 @@ function downloadItem(bundle, name, download, message, callback) {
 			return callback(error);
 		}
 
-		var fileName = util.format(
-			'%s%s',
-			name.trim(),
-			getExtension(normalizeFormat(path.parse(url.parse(download.url.web).pathname).ext))
-		);
-		debug('fileName =', fileName);
+		const formatType = normalizeFormatName(download.name);
+		const urlPath = url.parse(download.url.web).pathname;
+		const urlPathExt = urlPath ? path.parse(urlPath).ext : null;
+		const extension = formatNameToExtension(formatType, urlPathExt);
+
+		var fileName = util.format('%s%s', name.trim(), extension);
 		var filePath = path.resolve(downloadPath, sanitizeFilename(fileName));
+		debug('downloadItem():', { filePath, fileName });
 
 		checkSignatureMatch(filePath, download, (error, matches) => {
 			if (error) {
@@ -689,16 +692,16 @@ function downloadBundles(next, bundles) {
 					return false;
 				}
 
-				var normalizedFormat = normalizeFormat(download.name);
+				var normalizedFormatName = normalizeFormatName(download.name);
 
 				if (
-					bundleFormats.indexOf(normalizedFormat) === -1 &&
-					SUPPORTED_FORMATS.indexOf(normalizedFormat) !== -1
+					bundleFormats.indexOf(normalizedFormatName) === -1 &&
+					SUPPORTED_FORMATS.indexOf(normalizedFormatName) !== -1
 				) {
-					bundleFormats.push(normalizedFormat);
+					bundleFormats.push(normalizedFormatName);
 				}
 
-				return commander.format === 'all' || normalizedFormat === commander.format;
+				return commander.format === 'all' || normalizedFormatName === commander.format;
 			});
 
 			for (var filteredDownload of filteredDownloadStructs) {
@@ -738,16 +741,12 @@ function downloadBundles(next, bundles) {
 		downloads,
 		(download, next) => {
 			limiter.submit((next) => {
-				const format = getExtension(
-					normalizeFormat(path.parse(url.parse(download.download.url.web).pathname).ext)
-				)
-					.toUpperCase()
-					.replace(/^[.]+/, '');
+				const formatName = normalizeFormatName(download.download.name).toUpperCase();
 				const message = util.format(
 					'Downloading %s - %s (%s) (%s)... (%s/%s)',
 					download.bundle,
 					download.name,
-					format,
+					formatName,
 					download.download.human_size,
 					colors.yellow(downloads.indexOf(download) + 1),
 					colors.yellow(downloads.length)
@@ -767,7 +766,7 @@ function downloadBundles(next, bundles) {
 								'SKIPPED download of completed %s - %s (%s) (%s)... (%s/%s)',
 								download.bundle,
 								download.name,
-								format,
+								formatName,
 								download.download.human_size,
 								colors.yellow(downloads.indexOf(download) + 1),
 								colors.yellow(downloads.length)
