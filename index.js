@@ -59,6 +59,10 @@ readline.Interface.prototype.close = function () {
 
 commander
 	.version(packageInfo.version)
+	.usage(
+		'[options] [PATTERN...]\n\nArguments:\n  PATTERN\tbundle name regex pattern(s) to match for download'
+	)
+	.arguments('[PATTERN...]')
 	.option(
 		'-d, --download-folder <download_folder>',
 		'Download folder',
@@ -98,7 +102,10 @@ commander
 	)
 	.option('-C, --no-cache', 'Ignore cached bundle information')
 	.option('--debug', 'Enable debug logging (default: false)', false)
+	// .option('-h --help', 'Display help/usage information')
 	.parse(process.argv);
+
+const PATTERNs = commander.args;
 
 if (ALLOWED_FORMATS.indexOf(commander.format) === -1) {
 	console.error(colors.red('Invalid format selected.'));
@@ -444,21 +451,29 @@ function fetchOrders(next, orders, session) {
 function filterOrders(next, orders, session) {
 	var filteredOrders = orders.filter((order) => {
 		let include = false;
-		// debug('order.platforms =>', flatten(keypath.get(order, 'subproducts.[].downloads.[].platform')))
-		if (commander.type === 'all') {
-			include = flatten(keypath.get(order, 'subproducts.[].downloads.[].platform')).some((v) =>
-				SUPPORTED_PLATFORMS.some(
-					(p) => p.localeCompare(v, undefined, { sensitivity: 'base' }) === 0
-				)
-			);
-		} else {
-			include = flatten(keypath.get(order, 'subproducts.[].downloads.[].platform')).some(
-				(v) => commander.type.localeCompare(v, undefined, { sensitivity: 'base' }) === 0
-			);
-		}
-		// debug('match:platform =>', include)
-		// debug('order.names =>',flatten(keypath.get(order, 'subproducts.[].downloads.[].download_struct.[].name')))
 
+		if (PATTERNs.length <= 0) {
+			include = true;
+		} else {
+			include = PATTERNs.some((pattern) => new RegExp(pattern, 'i').test(order.product.human_name));
+		}
+
+		// debug('order.platforms =>', flatten(keypath.get(order, 'subproducts.[].downloads.[].platform')))
+		if (include) {
+			if (commander.type === 'all') {
+				include = flatten(keypath.get(order, 'subproducts.[].downloads.[].platform')).some((v) =>
+					SUPPORTED_PLATFORMS.some(
+						(p) => p.localeCompare(v, undefined, { sensitivity: 'base' }) === 0
+					)
+				);
+			} else {
+				include = flatten(keypath.get(order, 'subproducts.[].downloads.[].platform')).some(
+					(v) => commander.type.localeCompare(v, undefined, { sensitivity: 'base' }) === 0
+				);
+			}
+			// debug('match:platform =>', include)
+			// debug('order.names =>',flatten(keypath.get(order, 'subproducts.[].downloads.[].download_struct.[].name')))
+		}
 		if (include) {
 			if (commander.format === 'all') {
 				include = flatten(
