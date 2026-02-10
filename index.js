@@ -494,7 +494,7 @@ function filterOrders(next, orders, session) {
 			include = PATTERNs.some((pattern) => new RegExp(pattern, 'i').test(order.product.human_name));
 		}
 
-		// debug('order.platforms =>', flatten(keypath.get(order, 'subproducts.[].downloads.[].platform')))
+		// debug('filterOrders():', 'order.platforms =>', flatten(keypath.get(order, 'subproducts.[].downloads.[].platform')))
 		if (include) {
 			if (commander.type === 'all') {
 				include = flatten(keypath.get(order, 'subproducts.[].downloads.[].platform')).some((v) =>
@@ -507,8 +507,8 @@ function filterOrders(next, orders, session) {
 					(v) => commander.type.localeCompare(v, undefined, { sensitivity: 'base' }) === 0
 				);
 			}
-			// debug('match:platform =>', include)
-			// debug('order.names =>',flatten(keypath.get(order, 'subproducts.[].downloads.[].download_struct.[].name')))
+			// debug('filterOrders():', 'match:platform =>', include)
+			// debug('filterOrders():', 'order.names =>',flatten(keypath.get(order, 'subproducts.[].downloads.[].download_struct.[].name')))
 		}
 		if (include) {
 			if (commander.format === 'all') {
@@ -521,9 +521,9 @@ function filterOrders(next, orders, session) {
 				).some((v) => commander.format.localeCompare(v, undefined, { sensitivity: 'base' }) === 0);
 			}
 		}
-		// debug('match:supported_types =>',flatten(keypath.get(order, 'subproducts.[].downloads.[].download_struct.[].name')).some(v => SUPPORTED_FORMATS.concat('download').includes(v.toLowerCase())))
-		// debug('match:type =>', flatten(keypath.get(order, 'subproducts.[].downloads.[].download_struct.[].name')).some(v => commander.format.localeCompare(v, undefined, {sensitivity: 'base'}) === 0))
-		// debug('include =>', include)
+		// debug('filterOrders():', 'match:supported_types =>',flatten(keypath.get(order, 'subproducts.[].downloads.[].download_struct.[].name')).some(v => SUPPORTED_FORMATS.concat('download').includes(v.toLowerCase())))
+		// debug('filterOrders():', 'match:type =>', flatten(keypath.get(order, 'subproducts.[].downloads.[].download_struct.[].name')).some(v => commander.format.localeCompare(v, undefined, {sensitivity: 'base'}) === 0))
+		// debug('filterOrders():', 'include =>', include)
 		return include;
 	});
 
