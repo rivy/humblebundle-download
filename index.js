@@ -423,6 +423,42 @@ function fetchOrders(next, orders, session) {
 									);
 								}
 
+								// [2026-02-09; rivy] some orderID URLs are returning garbled, non-JSON-parsable, text leading to `SyntaxError: Expected ',' or '}' after property value in JSON at position ... (line ... column 50)`
+								//    ... it looks like unescaped JS is being included in the response text as a value for some "description-text" entries, leading to a JSON parsing failure
+								//    ... the offending line(s) in the response text seem to start with `^"description-text":"<html>\n <head><script type="text/javascript"> ...` and ends with a line starting with `^"developers":[...`
+								// Check and fix garbled JSON in response.body
+								if (response.body) {
+									// If response.body is a string, try to parse it
+									if (typeof response.body === 'string') {
+										try {
+											response.body = JSON.parse(response.body);
+										} catch (e) {
+											debug(
+												'fetchOrders(): Warning: Failed to parse response.body as JSON, attempting to fix...'
+											);
+											let fixed = response.body
+												// * common fixes for garbled JSON
+												// .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":') // Add quotes to unquoted keys
+												// .replace(/:\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*([,}])/g, ':"$1"$2') // Add quotes to unquoted string values
+												// .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
+												.replace(
+													/^("description-text":"<html>\s*(\\n|)\s*<head><script type="text\/javascript">[\s\S]*)(?=\n"developers":)/gm,
+													'"description-text":"[REMOVED_BROKEN_ENTRY (unescaped JS code)]",'
+												);
+											try {
+												response.body = JSON.parse(fixed);
+												debug('fetchOrders(): note: Successfully fixed garbled JSON');
+											} catch (e2) {
+												console.error(
+													`Could not fix garbled JSON (for orderID: ${item.gamekey}):`,
+													e2.message
+												);
+												response.body = [];
+											}
+										}
+									}
+								}
+
 								progressBar.update(++done);
 								next(null, response.body);
 							}
